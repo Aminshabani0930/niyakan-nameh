@@ -1,0 +1,6 @@
+{
+    "ocaml.sandbox": {
+        "kind": "global"
+    },
+    "extension.prophet.sitecontext.selectedSiteID": ""
+}

@@ -1,0 +1,24 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ContentItem {
+  id          String    @id @default(cuid())
+  title       String
+  caption     String    @default("")
+  script      String    @default("")
+  category    String
+  format      String
+  status      String    @default("IDEA")
+  publishDate DateTime
+  recordDate  DateTime?
+  mediaUrl    String?
+  igMediaId   String?
+  createdAt   DateTime  @default(now())
+  @@index([publishDate])
+}

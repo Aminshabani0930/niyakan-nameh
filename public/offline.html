@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#174d41">
+    <title>آفلاین | نیاکان‌نامه</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        display: grid;
+        min-height: 100vh;
+        margin: 0;
+        place-items: center;
+        background: #f5f4ee;
+        color: #18211f;
+        font-family: Tahoma, "Segoe UI", sans-serif;
+        text-align: center;
+      }
+      main { max-width: 420px; padding: 32px; }
+      .mark {
+        display: grid;
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 20px;
+        place-items: center;
+        border-radius: 20px;
+        background: #174d41;
+        color: #f6e8c8;
+        font-size: 32px;
+      }
+      h1 { font-size: 22px; }
+      p { color: #73807a; font-size: 14px; line-height: 2; }
+      button {
+        min-height: 44px;
+        border: 0;
+        border-radius: 10px;
+        background: #174d41;
+        padding: 0 20px;
+        color: #fff;
+        font: inherit;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="mark" aria-hidden="true">ن</div>
+      <h1>اتصال اینترنت برقرار نیست</h1>
+      <p>برای دسترسی به برنامه‌ریزی محتوا و اطلاعات حساب، دوباره به اینترنت وصل شوید.</p>
+      <button onclick="location.reload()">تلاش دوباره</button>
+    </main>
+  </body>
+</html>
