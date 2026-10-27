@@ -113,6 +113,7 @@ enum CyrusSection {
 enum ReviewStatus {
   NEEDS_REVIEW
   APPROVED
+  REJECTED
 }
 
 model Source {
@@ -257,13 +258,14 @@ model ResearchEntry {
 }
 
 model ResearchCitation {
+  id      String @id @default(cuid())
   entryId String
   chunkId String
   claim   String @db.Text
   entry   ResearchEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
   chunk   SourceChunk   @relation(fields: [chunkId], references: [id], onDelete: Cascade)
 
-  @@id([entryId, chunkId, claim])
+  @@index([entryId, chunkId])
   @@index([chunkId])
 }
 

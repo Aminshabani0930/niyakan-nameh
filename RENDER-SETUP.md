@@ -58,6 +58,8 @@ npx prisma migrate status
 
 مایگریشن `20261028090000_source_library` جداول منبع، بخش‌های full-text، شاهنامه و معماری را اضافه می‌کند. ابتدا وضعیت را بررسی کنید، سپس migrationها را به‌ترتیب زمانی با `npx prisma migrate deploy` اجرا کنید. هیچ migration در زمان build اجرا نمی‌شود.
 
+پس از آن `20261028091000_cyrus_entries` و سپس `20261028092000_research_review` را اجرا کنید. مجموعه‌ی migrationهای قبلی PlanItem باید طبق timestamp قبل از این سه migration اجرا شده باشد.
+
 فایل‌های عادی در `/library` تا ۵MB بارگذاری می‌شوند. فایل‌های بزرگ‌تر را مطابق `data/README.md` در پوشه‌ی `data/` بگذارید و `npm run import:source` را از محیطی با اتصال دیتابیس اجرا کنید. فایل‌ها در مسیر deployment روی Render رایگان پایدار نیستند؛ آن‌ها را در repository یا فضای پایدار خود نگه دارید، نه دیسک موقت سرویس.
 
 ## ۳) Cron Job روزانه

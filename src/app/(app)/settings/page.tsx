@@ -15,12 +15,15 @@ type Status = {
   database: boolean;
   configured: {
     text: boolean;
+    fast: boolean;
+    review: boolean;
+    fallback: boolean;
     image: boolean;
     cloudinary: boolean;
     instagram: boolean;
     telegram: boolean;
   };
-  models: { text: string | null; fast?: string | null; review?: string | null; fallback?: string | null; image: string | null };
+  models: { text: string; fast: string; review: string; fallback: string; image: string | null };
   environment: { name: string; configured: boolean }[];
 };
 

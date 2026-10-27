@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/client";
 
 type Section = "BIOGRAPHY" | "TIMELINE" | "CONQUESTS" | "CYRUS_CYLINDER" | "PASARGADAE" | "SOURCES" | "LATER_TRADITIONS" | "GALLERY" | "Q_AND_A";
-type Entry = { id: string; section: Section; title: string; text: string; status: "NEEDS_REVIEW" | "APPROVED"; order: number; imageUrl: string | null; citations: { chunk: { id: string; sequence: number; title: string; text: string; source: { id: string; title: string } } }[] };
+type Entry = { id: string; section: Section; title: string; text: string; status: "NEEDS_REVIEW" | "APPROVED" | "REJECTED"; order: number; imageUrl: string | null; citations: { chunk: { id: string; sequence: number; title: string; text: string; source: { id: string; title: string } } }[] };
 type Source = { id: string; title: string; type: string };
 type Chunk = { id: string; sequence: number; title: string };
 type Published = { id: string; title: string; caption: string; publishDate: string; igMediaId: string | null; mediaUrl: string | null; format: string };
@@ -42,7 +42,7 @@ export default function CyrusPage() {
                 api<Source[]>("/api/library"),
             ]);
             setEntries(approved.filter(entry => entry.status === "APPROVED"));
-            setAllEntries(review.filter(entry => entry.status === "NEEDS_REVIEW"));
+            setAllEntries(review.filter(entry => entry.status !== "APPROVED"));
             setSources(sourceRows.filter(source => source.type === "CYRUS"));
             if (tab === "INSTAGRAM") setPublished(await api<Published[]>("/api/cyrus/instagram"));
         } catch { setError("دریافت بخش کوروش ناموفق بود."); }
@@ -83,8 +83,9 @@ export default function CyrusPage() {
         if (!sources.length) { setMessage("ابتدا منبع بارگذاری کنید."); return; }
         setBusy(true);
         try {
-            const result = await api<{ title: string; text: string }>("/api/research/draft", "POST", { subject: "کوروش", section: tab });
-            setTitle(result.title); setText(result.text); setMessage("پیش‌نویس پژوهشی آماده‌ی ویرایش است؛ هنوز ذخیره یا تأیید نشده.");
+            const result = await api<Entry>("/api/cyrus/draft", "POST", { section: tab });
+            setEditId(result.id); setTitle(result.title); setText(result.text);
+            setMessage("پیش‌نویس با ارجاع ذخیره شد؛ برای نمایش، متن و منبع را بازبینی کنید.");
         } catch (draftError) { setError(draftError instanceof Error ? draftError.message : "تولید پیش‌نویس پژوهشی ناموفق بود."); }
         finally { setBusy(false); }
     }
@@ -132,7 +133,7 @@ export default function CyrusPage() {
                     <label className="field"><span className="field-label">متن</span><textarea className="field-input field-textarea" rows={5} value={text} onChange={event => setText(event.target.value)} /></label>
                 </div>
                 <button className="primary-button" disabled={busy || !title.trim() || !text.trim()} onClick={() => saveEntry()}>{editId ? "ذخیره‌ی ویرایش" : "افزودن پیش‌نویس"}</button>
-                {allEntries.length > 0 && <div className="source-list" style={{ marginTop: 18 }}><h3 className="panel-title">در انتظار بازبینی ({allEntries.length.toLocaleString("fa-IR")})</h3>{allEntries.map(entry => <article className="source-row" key={entry.id}><div className="source-copy"><h3>{entry.title}</h3><p>{entry.text}</p><div className="source-meta">{entry.citations.map(citation => `${citation.chunk.source.title}، بخش ${citation.chunk.sequence}`).join(" · ") || "بدون ارجاع"}</div></div><div className="source-actions"><button className="secondary-button" onClick={() => { setEditId(entry.id); setTitle(entry.title); setText(entry.text); }}>ویرایش</button><button className="primary-button" disabled={entry.citations.length === 0} onClick={() => review(entry, "APPROVED")}>تأیید</button><button className="secondary-button" onClick={() => review(entry, "NEEDS_REVIEW")}>رد / نگه‌داری</button></div></article>)}</div>}
+                  {allEntries.length > 0 && <div className="source-list" style={{ marginTop: 18 }}><h3 className="panel-title">در انتظار بازبینی ({allEntries.length.toLocaleString("fa-IR")})</h3>{allEntries.map(entry => <article className="source-row" key={entry.id}><div className="source-copy"><h3>{entry.title}</h3><p>{entry.text}</p><div className="source-meta">{entry.citations.map(citation => `${citation.chunk.source.title}، بخش ${citation.chunk.sequence}`).join(" · ") || "بدون ارجاع"}</div></div><div className="source-actions"><button className="secondary-button" onClick={() => { setEditId(entry.id); setTitle(entry.title); setText(entry.text); }}>ویرایش</button><button className="primary-button" disabled={entry.citations.length === 0} onClick={() => review(entry, "APPROVED")}>تأیید</button><button className="secondary-button" onClick={() => review(entry, "REJECTED")}>رد</button></div></article>)}</div>}
             </section>
         </main>
     );

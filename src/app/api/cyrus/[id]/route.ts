@@ -24,7 +24,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const parsed = z.object({
         title: z.string().trim().min(1).max(300).optional(),
         text: z.string().trim().min(1).max(20_000).optional(),
-        status: z.enum(["NEEDS_REVIEW", "APPROVED"]).optional(),
+        status: z.enum(["NEEDS_REVIEW", "APPROVED", "REJECTED"]).optional(),
         order: z.number().int().optional(),
         imageUrl: z.string().url().nullable().optional(),
     }).safeParse(await req.json().catch(() => null));

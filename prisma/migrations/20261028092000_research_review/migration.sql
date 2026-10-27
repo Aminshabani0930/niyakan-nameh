@@ -1,5 +1,6 @@
 CREATE TYPE "ResearchConfidence" AS ENUM ('LOW', 'MEDIUM', 'HIGH');
 CREATE TYPE "InstagramDraftType" AS ENUM ('CAPTION', 'CAROUSEL', 'REEL', 'STORY');
+ALTER TYPE "ReviewStatus" ADD VALUE 'REJECTED';
 
 CREATE TABLE "ResearchEntry" (
   "id" TEXT NOT NULL,
@@ -19,11 +20,13 @@ CREATE TABLE "ResearchEntry" (
 CREATE INDEX "ResearchEntry_status_topicId_createdAt_idx" ON "ResearchEntry"("status", "topicId", "createdAt");
 
 CREATE TABLE "ResearchCitation" (
+  "id" TEXT NOT NULL,
   "entryId" TEXT NOT NULL,
   "chunkId" TEXT NOT NULL,
   "claim" TEXT NOT NULL,
-  CONSTRAINT "ResearchCitation_pkey" PRIMARY KEY ("entryId", "chunkId", "claim")
+  CONSTRAINT "ResearchCitation_pkey" PRIMARY KEY ("id")
 );
+CREATE INDEX "ResearchCitation_entryId_chunkId_idx" ON "ResearchCitation"("entryId", "chunkId");
 CREATE INDEX "ResearchCitation_chunkId_idx" ON "ResearchCitation"("chunkId");
 ALTER TABLE "ResearchCitation" ADD CONSTRAINT "ResearchCitation_entryId_fkey"
   FOREIGN KEY ("entryId") REFERENCES "ResearchEntry"("id") ON DELETE CASCADE ON UPDATE CASCADE;

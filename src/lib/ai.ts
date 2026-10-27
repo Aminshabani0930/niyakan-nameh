@@ -101,7 +101,7 @@ function getClient() {
   if (baseURL.replace(/\/$/, "") !== "https://api.gapgpt.app/v1") {
     throw new Error("AI_BASE_URL must use the GapGPT OpenAI-compatible endpoint");
   }
-  return new OpenAI({ apiKey, baseURL, timeout: 13_000, maxRetries: 0 });
+  return new OpenAI({ apiKey, baseURL, timeout: 8_000, maxRetries: 0 });
 }
 
 function parseJsonObject(content: string): unknown {
@@ -136,7 +136,8 @@ async function requestJson<T>(
   const primary = configuredModel(role);
   const fallback = fallbackModel();
   let lastError: unknown;
-  for (const model of [...new Set([primary, fallback])]) {
+  const models = role === "review" ? [primary] : [...new Set([primary, fallback])];
+  for (const model of models) {
     try {
       const res = await client.chat.completions.create({
         model,
@@ -152,6 +153,78 @@ async function requestJson<T>(
     }
   }
   throw lastError instanceof Error ? lastError : new Error("پاسخ از سرویس هوش مصنوعی دریافت نشد");
+}
+
+const ResearchOutput = z.object({
+  title: z.string().min(1).max(300),
+  text: z.string().min(1).max(20_000),
+  claims: z.array(z.object({
+    claim: z.string().min(1),
+    citations: z.array(z.object({ sourceId: z.string(), sequence: z.number().int().positive() })).default([]),
+  })).max(40),
+  unsupportedClaims: z.array(z.string()).default([]),
+  confidence: z.enum(["LOW", "MEDIUM", "HIGH"]),
+});
+
+const ResearchReview = z.object({
+  reviews: z.array(z.object({
+    claim: z.string(), sourceId: z.string(), sequence: z.number().int().positive(),
+    supported: z.boolean(), reason: z.string().default(""),
+  })).max(120),
+});
+
+export type GroundedResearch = z.infer<typeof ResearchOutput>;
+export type GroundedCitationReview = z.infer<typeof ResearchReview>["reviews"];
+
+export async function writeGroundedResearch(input: {
+  subject: string;
+  topic: string;
+  sources: { sourceId: string; sourceTitle: string; sequence: number; chunkTitle: string; text: string }[];
+}) {
+  const sourceText = input.sources.map(source =>
+    `[sourceId=${source.sourceId}, بخش=${source.sequence}, منبع=${source.sourceTitle}, عنوان=${source.chunkTitle}]\n${source.text}`,
+  ).join("\n\n");
+  return requestJson(ResearchOutput, [
+    { role: "system", content: "فقط بر اساس بخش‌های داده‌شده بنویس. هر ادعای مهم با ارجاع [منبع، بخش] مشخص شود. اگر منبع کافی نیست صریح بگو «در منابع موجود پشتوانه‌ای نیست» و ننویس. هیچ نقل‌قول، تاریخ، آیه یا بیت از حافظه نیاور. اگر منابع اختلاف دارند هر دو روایت را با ارجاع بیاور. متن فارسی باشد. claims باید ادعاهای مهم متن و شناسه‌ی منبع و شماره‌ی بخش دقیق از ورودی را داشته باشد. خروجی فقط JSON با title، text، claims[{claim,citations[{sourceId,sequence}]}]، unsupportedClaims[] و confidence یکی از LOW/MEDIUM/HIGH." },
+    { role: "user", content: `موضوع: ${input.topic}\nدرخواست: ${input.subject}\n\nبخش‌های بازیابی‌شده:\n${sourceText}` },
+  ], 3_000, "text");
+}
+
+export async function reviewGroundedResearch(input: {
+  title: string;
+  text: string;
+  claims: GroundedResearch["claims"];
+  sources: { sourceId: string; sourceTitle: string; sequence: number; chunkTitle: string; text: string }[];
+}) {
+  const sourceText = input.sources.map(source =>
+    `[sourceId=${source.sourceId}, بخش=${source.sequence}, منبع=${source.sourceTitle}, عنوان=${source.chunkTitle}]\n${source.text}`,
+  ).join("\n\n");
+  return requestJson(ResearchReview, [
+    { role: "system", content: "بازبین ارجاع هستی. برای هر claim فقط وقتی supported=true بده که sourceId و sequence دقیقاً در بخش‌های موجود باشد و متن همان بخش ادعا را پشتیبانی کند. نقل‌قول یا دانسته‌ی بیرونی وارد نکن. برای ارجاع ناموجود یا ناسازگار supported=false بده. همه‌ی claimها و ارجاع‌های ارائه‌شده را پوشش بده. خروجی فقط JSON به شکل {reviews:[{claim,sourceId,sequence,supported,reason}]} باشد." },
+    { role: "user", content: `عنوان: ${input.title}\nمتن: ${input.text}\nادعاها و ارجاع‌ها:\n${JSON.stringify(input.claims)}\n\nمتن کامل منابع مجاز:\n${sourceText}` },
+  ], 2_500, "review");
+}
+
+const InstagramOutput = z.object({
+  hook: z.string(), caption: z.string(), hashtags: z.array(z.string()),
+  carouselSlides: z.array(z.string()).max(10), reelScript: z.string(),
+  storyText: z.string(), storyIdea: z.string(), imagePrompt: z.string(),
+});
+
+export type InstagramDraftContent = z.infer<typeof InstagramOutput> & { imageUrl: string | null; imageError: string | null };
+
+export async function writeInstagramDraft(input: { title: string; text: string; citations: string[]; format: "CAPTION" | "CAROUSEL" | "REEL" | "STORY"; imageStyle?: string }) {
+  const output = await requestJson(InstagramOutput, [
+    { role: "system", content: `از متن تأییدشده‌ی داده‌شده فقط یک پیش‌نویس اینستاگرامی فارسی بساز. قلاب خط اول کپشن باشد. ادعای تازه اضافه نکن. کاروسل ۳ اسلاید داشته باشد. imagePrompt فقط صحنه/سوژه/نور باشد و متن تصویری نخواهد. سبک تصویر: ${imageStyle || process.env.AI_IMAGE_STYLE || DEFAULT_IMAGE_STYLE}. خروجی JSON با hook,caption,hashtags,carouselSlides,reelScript,storyText,storyIdea,imagePrompt.` },
+    { role: "user", content: `قالب: ${input.format}\nعنوان: ${input.title}\nمتن تأییدشده:\n${input.text}\n\nمنابع: ${input.citations.join("؛ ")}` },
+  ], 2_500, "text");
+  let imageUrl: string | null = null;
+  let imageError: string | null = null;
+  if (imageModel()) {
+    try { imageUrl = await generateImage(`${imageStyle(input.imageStyle)}. ${output.imagePrompt}. ${input.citations.join(". ")}. هیچ متن، حرف، عدد، لوگو یا واترمارکی در تصویر نباشد.`); }
+    catch { imageError = IMAGE_FAILED; }
+  } else imageError = "مدل تصویر تنظیم نشده است؛ متن پیش‌نویس حفظ شد.";
+  return { ...output, imageUrl, imageError };
 }
 
 type RawItem = {
@@ -205,7 +278,7 @@ export async function generateImage(prompt: string) {
     prompt,
     n: 1,
     size,
-  }, { timeout: 13_000, maxRetries: 0 });
+  }, { timeout: 8_000, maxRetries: 0 });
 
   const data = image.data?.[0] as { url?: string; b64_json?: string; media_type?: string } | undefined;
   if (data?.url) return uploadImageUrl(data.url);
