@@ -3,7 +3,7 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
-    name: "نیاکان‌نامه | مدیریت روایت‌ها",
+    name: "نیاکان‌نامه",
     short_name: "نیاکان‌نامه",
     description: "برنامه‌ریزی و مدیریت محتوای تاریخی و فرهنگی نیاکان‌نامه",
     lang: "fa",
@@ -12,8 +12,8 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: "/",
     display: "standalone",
     orientation: "portrait-primary",
-    background_color: "#f5f4ee",
-    theme_color: "#174d41",
+    background_color: "#14100c",
+    theme_color: "#14100c",
     categories: ["productivity", "social"],
     icons: [
       { src: "/icons/pwa-192.png", sizes: "192x192", type: "image/png", purpose: "any" },

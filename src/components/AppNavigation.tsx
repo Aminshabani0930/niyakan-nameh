@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 
@@ -19,7 +20,7 @@ export default function AppNavigation() {
   return (
     <aside className="sidebar">
       <Link href="/" className="brand">
-        <span className="brand-symbol">ن</span>
+        <Image className="brand-logo" src="/icons/pwa-192.png" alt="" width={40} height={40} />
         <span>
           <span className="brand-name">نیاکان‌نامه</span>
           <span className="brand-caption">روایت زنده‌ی ریشه‌ها</span>

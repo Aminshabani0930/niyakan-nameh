@@ -18,14 +18,22 @@ export const CATEGORIES: { key: CategoryKey; title: string; icon: string }[] = [
   { key: "culture", title: "جشن‌ها و آیین‌ها", icon: "🔥" },
 ] as const;
 
-export const FORMATS = ["POST", "STORY", "REEL"] as const;
+export const FORMATS = ["POST", "CAROUSEL", "STORY", "REEL"] as const;
 export type Format = (typeof FORMATS)[number];
 export const STATUSES = ["IDEA", "TO_RECORD", "READY", "PUBLISHED"] as const;
 
 export const FORMAT_FA: Record<Format, string> = {
   POST: "پست",
+  CAROUSEL: "کاروسل",
   STORY: "استوری",
   REEL: "ریلز",
+};
+
+export const FORMAT_ICON: Record<Format, string> = {
+  POST: "▤",
+  CAROUSEL: "❏",
+  STORY: "◉",
+  REEL: "▶",
 };
 
 export const STATUS_FA: Record<(typeof STATUSES)[number], string> = {

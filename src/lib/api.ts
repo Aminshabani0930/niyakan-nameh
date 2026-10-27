@@ -9,8 +9,8 @@ export const handle =
       return NextResponse.json(await fn(req, ctx));
     } catch (e) {
       const bad = e instanceof ZodError;
-      if (!bad) console.error("API request failed:", e);
       const code = typeof e === "object" && e !== null && "code" in e ? e.code : null;
+      if (!bad) console.error("API request failed");
       const msg = bad
         ? "ورودی نامعتبر: " + e.issues.map(i => i.path.join(".")).join("، ")
         : code === "P2025" ? "محتوا پیدا نشد" : "خطای داخلی سرور";

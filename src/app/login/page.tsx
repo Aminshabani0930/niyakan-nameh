@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 
@@ -24,21 +25,18 @@ export default function Login() {
 
   return (
     <main dir="rtl" className="login-shell">
-      <section className="login-art">
-        <a href="/" className="brand">
-          <span className="brand-symbol">ن</span>
-          <span><span className="brand-name">نیاکان‌نامه</span><span className="brand-caption">روایت زنده‌ی ریشه‌ها</span></span>
-        </a>
-        <div className="login-copy">
-          <div className="hero-kicker">از ریشه تا روایت</div>
-          <h1>قصه‌های ایران را زنده نگه داریم</h1>
-          <p>به فضای مدیریت محتوای نیاکان‌نامه وارد شوید و روایت‌های تاریخی و فرهنگی را برنامه‌ریزی کنید.</p>
-        </div>
-        <div className="login-quote">«توانا بود هر که دانا بود»</div>
-      </section>
+      <Image
+        className="login-background"
+        src="/brand/relief-hero-1800.webp"
+        alt=""
+        fill
+        priority
+        sizes="100vw"
+      />
+      <div className="login-overlay" aria-hidden="true" />
       <section className="login-form-side">
         <form onSubmit={submit} className="login-form">
-          <div className="brand-symbol" aria-hidden="true">ن</div>
+          <Image className="login-logo" src="/icons/pwa-512.png" alt="نیاکان‌نامه" width={300} height={300} priority />
           <h2>خوش آمدید</h2>
           <p>برای ورود به فضای کار، رمز عبور خود را وارد کنید.</p>
           <label htmlFor="password" className="login-label">رمز عبور</label>

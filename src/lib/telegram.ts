@@ -8,5 +8,5 @@ export async function sendTelegram(text: string) {
     body: JSON.stringify({ chat_id: chat, text }),
   });
   const json = await res.json();
-  if (!json.ok) throw new Error(json.description);
+  if (!json.ok) throw new Error("ارسال پیام تلگرام ناموفق بود");
 }

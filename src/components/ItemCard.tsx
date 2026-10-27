@@ -20,6 +20,7 @@ export default function ItemCard({ item, reload, onError }: { item: Item; reload
   };
   const patch = (d: object) => api(`/api/content/${item.id}`, "PATCH", d);
   const done = item.status === "PUBLISHED";
+  const mediaCount = item.mediaUrls.length || (item.mediaUrl ? 1 : 0);
 
   return (
     <article className="item-card">
@@ -27,7 +28,10 @@ export default function ItemCard({ item, reload, onError }: { item: Item; reload
         <div>
           <span className="item-format">{FORMAT_FA[item.format]}</span>
           <b>{item.title}</b>
-          <div className="item-card-meta">{catTitle(item.category)} · {fa(item.publishDate)}</div>
+          <div className="item-card-meta">
+            {catTitle(item.category)} · {fa(item.publishDate)}
+            {mediaCount > 0 && ` · ${mediaCount.toLocaleString("fa-IR")} رسانه`}
+          </div>
         </div>
         <div className="item-card-actions">
           <select disabled={busy || done} value={item.status} className="item-status-select"
@@ -36,12 +40,25 @@ export default function ItemCard({ item, reload, onError }: { item: Item; reload
           </select>
           {!done && (
             <label className="item-action-button">
-              {item.mediaUrl ? "تعویض فایل" : "آپلود فایل"}
-              <input type="file" accept="image/*,video/*" hidden disabled={busy}
-                onChange={e => { const f = e.target.files?.[0]; if (f) run(async () => patch({ ...(await uploadMedia(f)), status: "READY" })); }} />
+              {mediaCount ? "تعویض فایل" : "آپلود فایل"}
+              <input type="file" accept="image/*,video/*" hidden disabled={busy} multiple={item.format === "CAROUSEL"}
+                onChange={e => {
+                  const files = Array.from(e.target.files ?? []);
+                  if (files.length === 0) return;
+                  run(async () => {
+                    if (item.format === "CAROUSEL" && files.length > 1) {
+                      const urls: string[] = [];
+                      for (const file of files) urls.push((await uploadMedia(file)).mediaUrl);
+                      await patch({ mediaUrls: urls, mediaUrl: urls[0], status: "READY" });
+                    } else {
+                      const uploaded = await uploadMedia(files[0]);
+                      await patch({ ...uploaded, mediaUrls: [uploaded.mediaUrl], status: "READY" });
+                    }
+                  });
+                }} />
             </label>
           )}
-          {!done && item.mediaUrl && (
+          {!done && mediaCount > 0 && (
             <button className="item-action-button primary" disabled={busy} onClick={() => run(() => api("/api/instagram/publish", "POST", { id: item.id }))}>
               انتشار در اینستاگرام
             </button>

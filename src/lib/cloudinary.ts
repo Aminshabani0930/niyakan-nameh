@@ -18,3 +18,34 @@ export function signUpload(resourceType: "image" | "video") {
     resourceType,
   };
 }
+
+/**
+ * تصویر تولیدشده توسط GapGPT معمولاً به‌صورت base64 برمی‌گردد؛
+ * اینستاگرام به URL عمومی نیاز دارد، پس آن را در Cloudinary نگه می‌داریم.
+ */
+export async function uploadBase64Image(base64: string, mimeType = "image/png") {
+  if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+    throw new Error("برای ذخیره‌ی تصویر، تنظیمات Cloudinary را کامل کنید");
+  }
+  const result = await cloudinary.uploader.upload(`data:${mimeType};base64,${base64}`, {
+    folder: "niyakan-nameh/ai",
+    resource_type: "image",
+    transformation: [{ width: 1080, height: 1350, crop: "limit", quality: "auto" }],
+  });
+  if (!result.secure_url) throw new Error("آپلود تصویر در Cloudinary ناموفق بود");
+  return result.secure_url;
+}
+
+export async function uploadImageUrl(url: string) {
+  if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+    throw new Error("Cloudinary is not configured");
+  }
+  if (!url.startsWith("https://")) throw new Error("Image URL must use HTTPS");
+  const result = await cloudinary.uploader.upload(url, {
+    folder: "niyakan-nameh/ai",
+    resource_type: "image",
+    transformation: [{ width: 1080, height: 1350, crop: "limit", quality: "auto" }],
+  });
+  if (!result.secure_url) throw new Error("Cloudinary did not return a secure URL");
+  return result.secure_url;
+}

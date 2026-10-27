@@ -3,8 +3,23 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum PlanContentType {
+  POST
+  CAROUSEL
+  REEL
+}
+
+enum PlanItemStatus {
+  PLANNED
+  GENERATING
+  DRAFT
+  APPROVED
+  FAILED
 }
 
 model ContentItem {
@@ -18,7 +33,248 @@ model ContentItem {
   publishDate DateTime
   recordDate  DateTime?
   mediaUrl    String?
+  mediaUrls   String[]  @default([])
   igMediaId   String?
+  source      String    @default("MANUAL")
+  imageError  String?
   createdAt   DateTime  @default(now())
+  planItem    PlanItem?
+
   @@index([publishDate])
+  @@index([status, publishDate])
+}
+
+model PlanItem {
+  id           String          @id @default(cuid())
+  topic        String
+  publishDate  DateTime
+  type         PlanContentType
+  tone         String
+  notes        String          @default("")
+  status       PlanItemStatus  @default(PLANNED)
+  errorMessage String?
+  contentId    String?         @unique
+  content      ContentItem?    @relation(fields: [contentId], references: [id], onDelete: SetNull)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([publishDate, status])
+  @@index([status])
+}
+
+model AppSetting {
+  id             String   @id @default("singleton")
+  postMix        String   @default("MIX")
+  postsPerWeek   Int      @default(4)
+  autoPublish    Boolean  @default(false)
+  agentEnabled   Boolean  @default(true)
+  imageStyle     String   @default("نگارگری ایرانی، مینیاتور صفوی، بافت کاغذ کهنه، رنگ‌های خاکی، لاجوردی و طلایی، ترکیب‌بندی سینمایی، بدون متن و واترمارک")
+  carouselSlides Int      @default(3)
+  updatedAt      DateTime @updatedAt
+}
+
+enum SourceType {
+  SHAHNAMEH
+  HISTORY
+  ARCHITECTURE
+  CYRUS
+  OTHER
+}
+
+enum HistoryPeriod {
+  MYTHICAL
+  ACHAEMENID
+  PARTHIAN
+  SASANIAN
+  ISLAMIC
+  SAFAVID
+  AFSHARID
+  ZAND
+  QAJAR
+}
+
+enum ArchitectureStatus {
+  NEEDS_REVIEW
+  APPROVED
+}
+
+enum CyrusSection {
+  BIOGRAPHY
+  TIMELINE
+  CONQUESTS
+  CYRUS_CYLINDER
+  PASARGADAE
+  SOURCES
+  LATER_TRADITIONS
+  GALLERY
+  Q_AND_A
+}
+
+enum ReviewStatus {
+  NEEDS_REVIEW
+  APPROVED
+}
+
+model Source {
+  id          String         @id @default(cuid())
+  title       String
+  authorEditor String        @default("")
+  type        SourceType
+  yearEdition String        @default("")
+  license     String
+  sourceUrl   String        @default("")
+  contentHash String?       @unique
+  notes       String        @default("")
+  period      HistoryPeriod?
+  uploadedAt  DateTime      @default(now())
+  chunks      SourceChunk[]
+  architectureEntries ArchitectureSource[]
+
+  @@index([type, uploadedAt])
+  @@index([period])
+}
+
+model SourceChunk {
+  id             String        @id @default(cuid())
+  sourceId       String
+  sequence       Int
+  title          String        @default("")
+  text           String        @db.Text
+  normalizedText String        @db.Text
+  chapterPage    String?
+  period         HistoryPeriod?
+  source         Source        @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  cyrusEntries   CyrusEntryCitation[]
+  researchCitations ResearchCitation[]
+
+  @@unique([sourceId, sequence])
+  @@index([sourceId, sequence])
+  @@index([period])
+}
+
+model ArchitectureEntry {
+  id           String             @id @default(cuid())
+  name         String
+  period       String
+  cityProvince String             @default("")
+  style        String             @default("")
+  features     String[]           @default([])
+  status       ArchitectureStatus @default(NEEDS_REVIEW)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  sources      ArchitectureSource[]
+
+  @@index([status, period])
+}
+
+model ArchitectureSource {
+  entryId  String
+  sourceId String
+  entry    ArchitectureEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  source   Source            @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@id([entryId, sourceId])
+  @@index([sourceId])
+}
+
+model ShahnamehStory {
+  id        String           @id @default(cuid())
+  title     String
+  order     Int
+  verses    ShahnamehVerse[]
+
+  @@unique([title, order])
+  @@index([order])
+}
+
+model ShahnamehVerse {
+  id              String         @id @default(cuid())
+  storyId         String
+  order           Int
+  firstHemistich  String
+  secondHemistich String
+  story           ShahnamehStory @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@unique([storyId, order])
+  @@index([storyId, order])
+}
+
+model CyrusEntry {
+  id         String       @id @default(cuid())
+  section    CyrusSection
+  title      String
+  text       String       @db.Text
+  status     ReviewStatus @default(NEEDS_REVIEW)
+  order      Int          @default(0)
+  imageUrl   String?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  citations  CyrusEntryCitation[]
+
+  @@index([section, status, order])
+}
+
+model CyrusEntryCitation {
+  entryId  String
+  chunkId  String
+  entry    CyrusEntry  @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  chunk    SourceChunk @relation(fields: [chunkId], references: [id], onDelete: Cascade)
+
+  @@id([entryId, chunkId])
+  @@index([chunkId])
+}
+
+enum ResearchConfidence {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum InstagramDraftType {
+  CAPTION
+  CAROUSEL
+  REEL
+  STORY
+}
+
+model ResearchEntry {
+  id                String             @id @default(cuid())
+  topicId           String
+  subject           String
+  title             String
+  text              String             @db.Text
+  unsupportedClaims String[]           @default([])
+  confidence        ResearchConfidence @default(LOW)
+  autoReviewPassed  Boolean            @default(false)
+  reviewNotes       String             @default("")
+  status            ReviewStatus       @default(NEEDS_REVIEW)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  citations         ResearchCitation[]
+  instagramDrafts   InstagramDraft[]
+
+  @@index([status, topicId, createdAt])
+}
+
+model ResearchCitation {
+  entryId String
+  chunkId String
+  claim   String @db.Text
+  entry   ResearchEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  chunk   SourceChunk   @relation(fields: [chunkId], references: [id], onDelete: Cascade)
+
+  @@id([entryId, chunkId, claim])
+  @@index([chunkId])
+}
+
+model InstagramDraft {
+  id              String             @id @default(cuid())
+  researchEntryId String
+  type            InstagramDraftType
+  content         Json
+  status          String             @default("DRAFT")
+  createdAt       DateTime           @default(now())
+  researchEntry   ResearchEntry      @relation(fields: [researchEntryId], references: [id], onDelete: Cascade)
+
+  @@index([researchEntryId, createdAt])
 }

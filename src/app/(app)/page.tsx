@@ -3,8 +3,19 @@ import { useCallback, useEffect, useState } from "react";
 import { CATEGORIES, FORMATS } from "@/lib/categories";
 import ItemCard from "@/components/ItemCard";
 import type { Item as ContentItem } from "@/lib/types";
+import { z } from "zod";
 
 type Item = ContentItem & { recordDate: string | null };
+const SuggestionResponse = z.array(z.object({
+  title: z.string(),
+  caption: z.string(),
+  hashtags: z.array(z.string()).default([]),
+  script: z.string().default(""),
+  slides: z.array(z.string()).default([]),
+  imageUrl: z.string().url().nullable().optional(),
+  imageUrls: z.array(z.string().url()).default([]),
+  imageError: z.string().nullable().optional(),
+}));
 
 function api(path: string, init: RequestInit = {}) {
   return fetch(path, { ...init, headers: { "Content-Type": "application/json", ...init.headers } });
@@ -44,7 +55,7 @@ export default function Home() {
   const category = CATEGORIES.find(c => c.key === cat) ?? CATEGORIES[0];
   const readyCount = items.filter(i => i.status === "READY").length;
   const publishedCount = items.filter(i => i.status === "PUBLISHED").length;
-  const formatIcon = (format: string) => format === "REEL" ? "▶" : format === "STORY" ? "◉" : "▤";
+  const formatIcon = (format: string) => format === "REEL" ? "▶" : format === "STORY" ? "◉" : format === "CAROUSEL" ? "❏" : "▤";
   const statusLabel = (status: string) => ({
     IDEA: "ایده",
     TO_RECORD: "آماده ضبط",
@@ -56,25 +67,39 @@ export default function Home() {
     setBusy(true); setMsg("");
     try {
       const r = await api("/api/ai/suggest", { method: "POST", body: JSON.stringify({ category: cat, format, count: 5 }) });
-      const suggestions = await r.json();
+      const response: unknown = await r.json();
       if (!r.ok) {
-        setMsg(typeof suggestions.error === "string" ? suggestions.error : "دریافت پیشنهاد ناموفق بود");
+        const error = typeof response === "object" && response !== null && "error" in response
+          && typeof response.error === "string" ? response.error : "دریافت پیشنهاد ناموفق بود";
+        setMsg(error);
         return;
       }
+      const suggestions = SuggestionResponse.parse(response);
 
       const last = items.filter(i => i.category === cat)
         .reduce((m, i) => Math.max(m, +new Date(i.publishDate)), Date.now() + 86400000);
       let saved = 0;
+      let imageFailures = 0;
       for (const [n, suggestion] of suggestions.entries()) {
         const created = await api("/api/content", { method: "POST", body: JSON.stringify({
           title: suggestion.title, caption: `${suggestion.caption}\n\n${suggestion.hashtags.join(" ")}`,
-          script: suggestion.script, category: cat, format,
+          script: suggestion.slides?.length
+            ? suggestion.slides.map((slide, index) => `${index + 1}. ${slide}`).join("\n\n")
+            : suggestion.script,
+          category: cat, format,
           publishDate: new Date(last + (n + 1) * 86400000).toISOString(),
+          ...(suggestion.imageUrls?.length
+            ? { mediaUrl: suggestion.imageUrls[0], mediaUrls: suggestion.imageUrls }
+            : suggestion.imageUrl ? { mediaUrl: suggestion.imageUrl, mediaUrls: [suggestion.imageUrl] } : {}),
+          ...(suggestion.imageError ? { imageError: suggestion.imageError } : {}),
         })});
         if (!created.ok) throw new Error("ذخیره یکی از پیشنهادها در برنامه ناموفق بود");
+        if (suggestion.imageError) imageFailures++;
         saved++;
       }
-      setMsg(`${saved} پیشنهاد به برنامه اضافه شد`);
+      setMsg(imageFailures
+        ? `${saved} پیشنهاد به برنامه اضافه شد؛ تولید تصویر برای ${imageFailures} پیشنهاد ناموفق بود.`
+        : `${saved} پیشنهاد به برنامه اضافه شد`);
       await load();
     } catch (error) {
       setMsg(error instanceof Error ? error.message : "خطا در دریافت پیشنهاد محتوا");

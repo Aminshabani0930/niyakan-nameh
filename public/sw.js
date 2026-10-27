@@ -1,10 +1,11 @@
-const CACHE_NAME = "niyakan-nameh-shell-v1";
+const CACHE_NAME = "niyakan-nameh-shell-v3";
 const OFFLINE_URL = "/offline.html";
+const LIBRARY_OFFLINE_URL = "/library-offline.html";
 
 self.addEventListener("install", event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.add(OFFLINE_URL))
+      .then(cache => cache.addAll([OFFLINE_URL, LIBRARY_OFFLINE_URL]))
       .then(() => self.skipWaiting())
   );
 });
