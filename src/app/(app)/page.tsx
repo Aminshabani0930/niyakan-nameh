@@ -1,6 +1,5 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { signOut } from "next-auth/react";
 import { CATEGORIES, FORMATS } from "@/lib/categories";
 import ItemCard from "@/components/ItemCard";
 import type { Item as ContentItem } from "@/lib/types";
@@ -127,27 +126,6 @@ export default function Home() {
   }
 
   return (
-    <div className="app-shell" dir="rtl">
-      <aside className="sidebar">
-        <a href="/" className="brand">
-          <span className="brand-symbol">ن</span>
-          <span><span className="brand-name">نیاکان‌نامه</span><span className="brand-caption">روایت زنده‌ی ریشه‌ها</span></span>
-        </a>
-        <div className="nav-caption">فضای کار</div>
-        <nav className="nav-list" aria-label="ناوبری اصلی">
-          <a className="nav-link active" href="#overview"><span className="nav-icon">⌂</span> نمای کلی</a>
-          <a className="nav-link" href="#schedule"><span className="nav-icon">▦</span> تقویم محتوا</a>
-          <a className="nav-link" href="#categories"><span className="nav-icon">▤</span> طومار موضوعات</a>
-          <a className="nav-link" href="/analytics"><span className="nav-icon">⌁</span> آمار اینستاگرام</a>
-        </nav>
-        <div className="sidebar-spacer" />
-        <div className="sidebar-note"><strong>یک روایت در هر روز</strong>از تاریخ و اسطوره تا دستاوردهایی که هنوز الهام‌بخش‌اند.</div>
-        <div className="sidebar-bottom">
-          <div className="profile"><span className="profile-avatar">✦</span><span>مدیر نیاکان‌نامه</span></div>
-          <button className="signout-button" onClick={() => signOut({ callbackUrl: "/login" })}>خروج</button>
-        </div>
-      </aside>
-
       <main className="main-area">
         <header className="topbar">
           <div>
@@ -255,7 +233,6 @@ export default function Home() {
           </div>
         </div>
       </main>
-    </div>
   );
 }
 

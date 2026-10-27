@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid, ResponsiveContainer } from "recharts";
 import { CATEGORIES } from "@/lib/categories";
 
@@ -46,7 +47,7 @@ export default function Analytics() {
     <main dir="rtl" className="analytics-page">
       <header className="analytics-header">
         <div>
-          <a className="text-link" href="/">← بازگشت به فضای کار</a>
+          <Link className="text-link" href="/">← بازگشت به فضای کار</Link>
           <h1>آمار اینستاگرام</h1>
         </div>
         <div className="analytics-actions">
