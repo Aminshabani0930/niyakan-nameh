@@ -12,9 +12,10 @@ function config() {
 async function call(path: string, params: Record<string, string>, method: "GET" | "POST" = "POST") {
   const { token } = config();
   const p = new URLSearchParams({ ...params, access_token: token });
+  const signal = AbortSignal.timeout(5_000);
   const res = method === "GET"
-    ? await fetch(`${G}/${path}?${p}`)
-    : await fetch(`${G}/${path}`, { method, body: p });
+    ? await fetch(`${G}/${path}?${p}`, { signal })
+    : await fetch(`${G}/${path}`, { method, body: p, signal });
   const json = await res.json();
   if (json.error) throw new Error(json.error.message);
   return json;

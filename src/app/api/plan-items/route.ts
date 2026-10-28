@@ -6,7 +6,7 @@ import { NextResponse } from "next/server";
 const PlanInput = z.object({
   topic: z.string().trim().min(1).max(500),
   publishDate: z.string().datetime(),
-  type: z.enum(["POST", "CAROUSEL", "REEL"]),
+  type: z.enum(["POST", "CAROUSEL", "REEL", "STORY"]),
   tone: z.string().trim().min(1).max(100),
   notes: z.string().max(2_000).default(""),
 });

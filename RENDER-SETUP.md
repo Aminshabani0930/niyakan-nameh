@@ -20,6 +20,7 @@
 | `AI_FAST_MODEL` | اختیاری؛ پیش‌فرض `gpt-5.6-luna` |
 | `AI_REVIEW_MODEL` | اختیاری؛ پیش‌فرض `gpt-5.6-sol` |
 | `AI_FALLBACK_MODEL` | اختیاری؛ پیش‌فرض `gapgpt-qwen-3.5` |
+| `AI_BASE_URL` | در Environment سرویس: `https://api.gapgpt.app/v1` |
 | `AI_IMAGE_MODEL` | نام مدل تصویر در GapGPT |
 | `AI_IMAGE_SIZE` | `1024x1536` |
 | `AI_IMAGE_STYLE` | سبک نگارگری ایرانی (همان مقدار `.env.example`) |
@@ -58,7 +59,7 @@ npx prisma migrate status
 
 مایگریشن `20261028090000_source_library` جداول منبع، بخش‌های full-text، شاهنامه و معماری را اضافه می‌کند. ابتدا وضعیت را بررسی کنید، سپس migrationها را به‌ترتیب زمانی با `npx prisma migrate deploy` اجرا کنید. هیچ migration در زمان build اجرا نمی‌شود.
 
-پس از آن `20261028091000_cyrus_entries` و سپس `20261028092000_research_review` را اجرا کنید. مجموعه‌ی migrationهای قبلی PlanItem باید طبق timestamp قبل از این سه migration اجرا شده باشد.
+پس از آن `20261028091000_cyrus_entries`، `20261028092000_research_review` و `20261028093000_content_calendar` را به همین ترتیب اجرا کنید. مجموعه‌ی migrationهای قبلی PlanItem باید طبق timestamp پیش از این چهار migration باشد.
 
 فایل‌های عادی در `/library` تا ۵MB بارگذاری می‌شوند. فایل‌های بزرگ‌تر را مطابق `data/README.md` در پوشه‌ی `data/` بگذارید و `npm run import:source` را از محیطی با اتصال دیتابیس اجرا کنید. فایل‌ها در مسیر deployment روی Render رایگان پایدار نیستند؛ آن‌ها را در repository یا فضای پایدار خود نگه دارید، نه دیسک موقت سرویس.
 
@@ -82,3 +83,4 @@ curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://<your-service>.onrende
 - **اینستاگرام:** انتشار خودکار انجام نمی‌شود؛ هر انتشار باید دستی تأیید شود.
 - **دسترسی از خارج ایران:** اگر GapGPT از IP Render جواب نداد، متن هم خطا می‌دهد؛ در آن صورت باید از یک واسط/پروکسی معتبر استفاده شود.
 - **پلن رایگان Render:** سرویس بعد از بی‌کاری می‌خوابد؛ Cron Job آن را بیدار می‌کند اما اولین درخواست ممکن است کند باشد.
+- **خلاصه‌ی صبح:** زمان `digestTime` در تنظیمات بر اساس تهران است. Schedule در Render به UTC نوشته می‌شود؛ برای default ساعت ۰۸:۰۰ تهران، `30 4 * * *` مناسب است. اگر ساعت را عوض کردید، Schedule Cron را هم هماهنگ کنید.

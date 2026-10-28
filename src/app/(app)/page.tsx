@@ -6,6 +6,7 @@ import type { Item as ContentItem } from "@/lib/types";
 import { z } from "zod";
 
 type Item = ContentItem & { recordDate: string | null };
+type CalendarPreviewItem = { id: string; date: string; time: string; format: string; topic: string; hook: string; sourceTag: string; status: string };
 const SuggestionResponse = z.array(z.object({
   title: z.string(),
   caption: z.string(),
@@ -28,6 +29,7 @@ export default function Home() {
   const [cat, setCat] = useState<string>(CATEGORIES[0].key);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
+  const [calendarPreview, setCalendarPreview] = useState<CalendarPreviewItem[]>([]);
 
   const load = useCallback(async () => {
     try {
@@ -41,8 +43,19 @@ export default function Home() {
     }
   }, []);
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    fetch(`/api/calendar?date=${tehranDay(new Date())}`)
+      .then(async response => response.ok ? response.json() as Promise<{ items: CalendarPreviewItem[] }> : null)
+      .then(result => setCalendarPreview(result?.items ?? []))
+      .catch(() => setCalendarPreview([]));
+  }, []);
 
   const todayKey = tehranDay(new Date());
+  const tomorrowKey = tehranDay(new Date(Date.now() + 86400000));
+  const todayTomorrowCalendar = calendarPreview.filter(item => {
+    const date = tehranDay(new Date(item.date));
+    return date === todayKey || date === tomorrowKey;
+  });
   const recordingEndKey = tehranDay(new Date(Date.now() + 2 * 86400000));
   const today = items.filter(i => tehranDay(new Date(i.publishDate)) === todayKey);
   const recording = items.filter(i =>
@@ -81,18 +94,20 @@ export default function Home() {
       let saved = 0;
       let imageFailures = 0;
       for (const [n, suggestion] of suggestions.entries()) {
-        const created = await api("/api/content", { method: "POST", body: JSON.stringify({
-          title: suggestion.title, caption: `${suggestion.caption}\n\n${suggestion.hashtags.join(" ")}`,
-          script: suggestion.slides?.length
-            ? suggestion.slides.map((slide, index) => `${index + 1}. ${slide}`).join("\n\n")
-            : suggestion.script,
-          category: cat, format,
-          publishDate: new Date(last + (n + 1) * 86400000).toISOString(),
-          ...(suggestion.imageUrls?.length
-            ? { mediaUrl: suggestion.imageUrls[0], mediaUrls: suggestion.imageUrls }
-            : suggestion.imageUrl ? { mediaUrl: suggestion.imageUrl, mediaUrls: [suggestion.imageUrl] } : {}),
-          ...(suggestion.imageError ? { imageError: suggestion.imageError } : {}),
-        })});
+        const created = await api("/api/content", {
+          method: "POST", body: JSON.stringify({
+            title: suggestion.title, caption: `${suggestion.caption}\n\n${suggestion.hashtags.join(" ")}`,
+            script: suggestion.slides?.length
+              ? suggestion.slides.map((slide, index) => `${index + 1}. ${slide}`).join("\n\n")
+              : suggestion.script,
+            category: cat, format,
+            publishDate: new Date(last + (n + 1) * 86400000).toISOString(),
+            ...(suggestion.imageUrls?.length
+              ? { mediaUrl: suggestion.imageUrls[0], mediaUrls: suggestion.imageUrls }
+              : suggestion.imageUrl ? { mediaUrl: suggestion.imageUrl, mediaUrls: [suggestion.imageUrl] } : {}),
+            ...(suggestion.imageError ? { imageError: suggestion.imageError } : {}),
+          })
+        });
         if (!created.ok) throw new Error("ذخیره یکی از پیشنهادها در برنامه ناموفق بود");
         if (suggestion.imageError) imageFailures++;
         saved++;
@@ -151,113 +166,118 @@ export default function Home() {
   }
 
   return (
-      <main className="main-area">
-        <header className="topbar">
-          <div>
-            <div className="eyebrow">فضای مدیریت محتوا</div>
-            <div className="topbar-date">{new Date().toLocaleDateString("fa-IR", { weekday: "long", day: "numeric", month: "long" })}</div>
-          </div>
-          <div className="top-actions">
-            <button className="icon-button" aria-label="بارگذاری دوباره" onClick={load}>↻</button>
-            <a href="#categories" className="secondary-button">✦ <span>ساخت ایده با هوش مصنوعی</span></a>
-          </div>
-        </header>
-
-        {msg && <p role="status" className={`message-banner ${msg.includes("ناموفق") || msg.includes("خطا") || msg.includes("غیرمجاز") ? "error" : ""}`}>{msg}</p>}
-
-        <section className="hero" id="overview">
-          <div className="hero-copy">
-            <div className="hero-kicker">روایت امروز، ریشه در گذشته</div>
-            <h1>قصه‌های ایران را زنده نگه داریم</h1>
-            <p>برنامه‌ی انتشار، ضبط و ایده‌های محتوایی نیاکان‌نامه را از یک‌جا دنبال کن.</p>
-          </div>
-          <div className="hero-ornament" aria-hidden="true">✳</div>
-        </section>
-
-        <section className="stats-grid" aria-label="خلاصه‌ی محتوا">
-          <article className="stat-card"><div className="stat-top"><span>انتشار امروز</span><span className="stat-icon">◷</span></div><div className="stat-number">{today.length.toLocaleString("fa-IR")}</div><div className="stat-hint">محتوای برنامه‌ریزی‌شده برای امروز</div></article>
-          <article className="stat-card"><div className="stat-top"><span>در صف ضبط</span><span className="stat-icon">◉</span></div><div className="stat-number">{recording.length.toLocaleString("fa-IR")}</div><div className="stat-hint">ضبط امروز و دو روز آینده</div></article>
-          <article className="stat-card"><div className="stat-top"><span>آماده‌ی انتشار</span><span className="stat-icon">↗</span></div><div className="stat-number">{readyCount.toLocaleString("fa-IR")}</div><div className="stat-hint">فایل آماده در کتابخانه‌ی محتوا</div></article>
-          <article className="stat-card"><div className="stat-top"><span>منتشرشده</span><span className="stat-icon">✓</span></div><div className="stat-number">{publishedCount.toLocaleString("fa-IR")}</div><div className="stat-hint">محتواهای منتشرشده‌ی ثبت‌شده</div></article>
-        </section>
-
-        <div className="content-grid">
-          <div className="content-list-column">
-            <section className="panel" id="schedule">
-              <div className="panel-heading">
-                <div><h2 className="panel-title">برنامه‌ی انتشار امروز</h2><div className="panel-subtitle">محتواهای آماده‌ی انتشار و کارهای باقی‌مانده</div></div>
-                <a className="text-link" href="#upcoming">برنامه‌ی پیش‌رو ←</a>
-              </div>
-              {today.length === 0 ? (
-                <div className="empty-state"><span className="empty-icon">✦</span>برای امروز محتوایی در تقویم نیست.<br />از دسته‌بندی‌ها یک ایده‌ی تازه بساز.</div>
-              ) : (
-                <div className="content-list">{today.map(item => (
-                  <article className="content-row" key={item.id}>
-                    <span className="format-icon">{formatIcon(item.format)}</span>
-                    <div className="row-copy">
-                      <div className="row-title">{item.title}</div>
-                      <div className="row-meta"><span>{categoryFor(item.category)}</span><span>{item.format}</span></div>
-                    </div>
-                    <span className={`status-pill ${item.status === "READY" ? "ready" : item.status === "PUBLISHED" ? "published" : item.status === "TO_RECORD" ? "record" : ""}`}>{statusLabel(item.status)}</span>
-                    <div className="row-actions">
-                      <label className="upload-label">↑ بارگذاری<input type="file" accept="image/*,video/*" aria-label={`بارگذاری رسانه برای ${item.title}`} onChange={e => e.target.files?.[0] && upload(item, e.target.files[0])} /></label>
-                      <button className="publish-button" disabled={item.status === "PUBLISHED" || !item.mediaUrl} onClick={() => publish(item.id)}>↗ انتشار</button>
-                    </div>
-                  </article>
-                ))}</div>
-              )}
-            </section>
-
-            <section className="panel" style={{ marginTop: 14 }}>
-              <div className="panel-heading">
-                <div><h2 className="panel-title">{category.icon} {category.title}</h2><div className="panel-subtitle">موضوعات و ایده‌های این بخش از طومار</div></div>
-                <span className="category-count">{categoryItems.length.toLocaleString("fa-IR")} محتوا</span>
-              </div>
-              {categoryItems.length === 0 ? (
-                <div className="empty-state">هنوز محتوایی در این دسته ثبت نشده است.<br />برای شروع از پیشنهاد هوش مصنوعی کمک بگیر.</div>
-              ) : (
-                <div className="item-manager-list">{categoryItems.map(item => (
-                  <ItemCard key={item.id} item={item} reload={load} onError={setMsg} />
-                ))}</div>
-              )}
-            </section>
-          </div>
-
-          <div className="content-side-column">
-            <section className="panel" id="categories">
-              <div className="panel-heading"><div><h2 className="panel-title">طومار موضوعات</h2><div className="panel-subtitle">روایتت را از کدام فصل آغاز می‌کنی؟</div></div></div>
-              <div className="category-list">{CATEGORIES.map(item => (
-                <button key={item.key} className={`category-button ${cat === item.key ? "selected" : ""}`} onClick={() => setCat(item.key)}>
-                  <span className="category-name"><span>{item.icon}</span>{item.title}</span><span className="category-count">{items.filter(content => content.category === item.key).length.toLocaleString("fa-IR")}</span>
-                </button>
-              ))}</div>
-              <div className="ai-divider" />
-              <div className="panel-subtitle" style={{ marginBottom: 9 }}>پیشنهاد ایده برای قالب</div>
-              <div className="ai-actions">{FORMATS.map(format => (
-                <button key={format} className="ai-button" disabled={busy} onClick={() => aiSuggest(format)}>{busy ? "در حال ساخت…" : `✦ ${format}`}</button>
-              ))}</div>
-            </section>
-
-            <section className="panel" style={{ marginTop: 14 }}>
-              <div className="panel-heading"><div><h2 className="panel-title">نوبت ضبط</h2><div className="panel-subtitle">امروز و دو روز آینده</div></div><span>🎬</span></div>
-              {recording.length === 0 ? <div className="empty-state">ضبطی برای این روزها برنامه‌ریزی نشده است.</div> : (
-                <div className="timeline">{recording.map(item => (
-                  <div className="timeline-item" key={item.id}><span className="timeline-dot" /><div className="timeline-copy"><div className="timeline-title">{item.title}</div><div className="timeline-date">{new Date(item.recordDate!).toLocaleDateString("fa-IR")} · {item.format}</div></div></div>
-                ))}</div>
-              )}
-            </section>
-
-            <section className="panel" id="upcoming" style={{ marginTop: 14 }}>
-              <div className="panel-heading"><div><h2 className="panel-title">انتشارهای بعدی</h2><div className="panel-subtitle">محتواهای برنامه‌ریزی‌شده</div></div><span>▦</span></div>
-              {upcoming.length === 0 ? <div className="empty-state">انتشار آینده‌ای در تقویم ثبت نشده است.</div> : (
-                <div className="timeline">{upcoming.slice(0, 5).map(item => (
-                  <div className="timeline-item" key={item.id}><span className="timeline-dot" /><div className="timeline-copy"><div className="timeline-title">{item.title}</div><div className="timeline-date">{new Date(item.publishDate).toLocaleDateString("fa-IR")} · {item.format}</div></div></div>
-                ))}</div>
-              )}
-            </section>
-          </div>
+    <main className="main-area">
+      <header className="topbar">
+        <div>
+          <div className="eyebrow">فضای مدیریت محتوا</div>
+          <div className="topbar-date">{new Date().toLocaleDateString("fa-IR", { weekday: "long", day: "numeric", month: "long" })}</div>
         </div>
-      </main>
+        <div className="top-actions">
+          <button className="icon-button" aria-label="بارگذاری دوباره" onClick={load}>↻</button>
+          <a href="#categories" className="secondary-button">✦ <span>ساخت ایده با هوش مصنوعی</span></a>
+        </div>
+      </header>
+
+      {msg && <p role="status" className={`message-banner ${msg.includes("ناموفق") || msg.includes("خطا") || msg.includes("غیرمجاز") ? "error" : ""}`}>{msg}</p>}
+
+      <section className="hero" id="overview">
+        <div className="hero-copy">
+          <div className="hero-kicker">روایت امروز، ریشه در گذشته</div>
+          <h1>قصه‌های ایران را زنده نگه داریم</h1>
+          <p>برنامه‌ی انتشار، ضبط و ایده‌های محتوایی نیاکان‌نامه را از یک‌جا دنبال کن.</p>
+        </div>
+        <div className="hero-ornament" aria-hidden="true">✳</div>
+      </section>
+
+      <section className="stats-grid" aria-label="خلاصه‌ی محتوا">
+        <article className="stat-card"><div className="stat-top"><span>انتشار امروز</span><span className="stat-icon">◷</span></div><div className="stat-number">{today.length.toLocaleString("fa-IR")}</div><div className="stat-hint">محتوای برنامه‌ریزی‌شده برای امروز</div></article>
+        <article className="stat-card"><div className="stat-top"><span>در صف ضبط</span><span className="stat-icon">◉</span></div><div className="stat-number">{recording.length.toLocaleString("fa-IR")}</div><div className="stat-hint">ضبط امروز و دو روز آینده</div></article>
+        <article className="stat-card"><div className="stat-top"><span>آماده‌ی انتشار</span><span className="stat-icon">↗</span></div><div className="stat-number">{readyCount.toLocaleString("fa-IR")}</div><div className="stat-hint">فایل آماده در کتابخانه‌ی محتوا</div></article>
+        <article className="stat-card"><div className="stat-top"><span>منتشرشده</span><span className="stat-icon">✓</span></div><div className="stat-number">{publishedCount.toLocaleString("fa-IR")}</div><div className="stat-hint">محتواهای منتشرشده‌ی ثبت‌شده</div></article>
+      </section>
+
+      <section className="panel calendar-preview-panel" style={{ marginTop: 14 }}>
+        <div className="panel-heading"><div><h2 className="panel-title">امروز و فردا</h2><div className="panel-subtitle">{calendarPreview[0]?.sourceTag ?? "پیشنهادها بر اساس اصول عمومی؛ بدون انتشار خودکار"}</div></div><a className="text-link" href="/calendar">تقویم ۷ روزه ←</a></div>
+        {todayTomorrowCalendar.length === 0 ? <div className="empty-state">تقویم برای امروز و فردا پیشنهاد ندارد. <a className="text-link" href="/calendar">ساخت پیشنهادها</a></div> : <div className="calendar-preview-list">{todayTomorrowCalendar.map(item => <article key={item.id}><div><b>{item.topic}</b><span>{item.format} · {new Date(item.date).toLocaleDateString("fa-IR", { weekday: "long", day: "numeric", month: "long", timeZone: "Asia/Tehran" })} · {item.time}</span></div><p>{item.hook}</p></article>)}</div>}
+      </section>
+
+      <div className="content-grid">
+        <div className="content-list-column">
+          <section className="panel" id="schedule">
+            <div className="panel-heading">
+              <div><h2 className="panel-title">برنامه‌ی انتشار امروز</h2><div className="panel-subtitle">محتواهای آماده‌ی انتشار و کارهای باقی‌مانده</div></div>
+              <a className="text-link" href="#upcoming">برنامه‌ی پیش‌رو ←</a>
+            </div>
+            {today.length === 0 ? (
+              <div className="empty-state"><span className="empty-icon">✦</span>برای امروز محتوایی در تقویم نیست.<br />از دسته‌بندی‌ها یک ایده‌ی تازه بساز.</div>
+            ) : (
+              <div className="content-list">{today.map(item => (
+                <article className="content-row" key={item.id}>
+                  <span className="format-icon">{formatIcon(item.format)}</span>
+                  <div className="row-copy">
+                    <div className="row-title">{item.title}</div>
+                    <div className="row-meta"><span>{categoryFor(item.category)}</span><span>{item.format}</span></div>
+                  </div>
+                  <span className={`status-pill ${item.status === "READY" ? "ready" : item.status === "PUBLISHED" ? "published" : item.status === "TO_RECORD" ? "record" : ""}`}>{statusLabel(item.status)}</span>
+                  <div className="row-actions">
+                    <label className="upload-label">↑ بارگذاری<input type="file" accept="image/*,video/*" aria-label={`بارگذاری رسانه برای ${item.title}`} onChange={e => e.target.files?.[0] && upload(item, e.target.files[0])} /></label>
+                    <button className="publish-button" disabled={item.status === "PUBLISHED" || !item.mediaUrl} onClick={() => publish(item.id)}>↗ انتشار</button>
+                  </div>
+                </article>
+              ))}</div>
+            )}
+          </section>
+
+          <section className="panel" style={{ marginTop: 14 }}>
+            <div className="panel-heading">
+              <div><h2 className="panel-title">{category.icon} {category.title}</h2><div className="panel-subtitle">موضوعات و ایده‌های این بخش از طومار</div></div>
+              <span className="category-count">{categoryItems.length.toLocaleString("fa-IR")} محتوا</span>
+            </div>
+            {categoryItems.length === 0 ? (
+              <div className="empty-state">هنوز محتوایی در این دسته ثبت نشده است.<br />برای شروع از پیشنهاد هوش مصنوعی کمک بگیر.</div>
+            ) : (
+              <div className="item-manager-list">{categoryItems.map(item => (
+                <ItemCard key={item.id} item={item} reload={load} onError={setMsg} />
+              ))}</div>
+            )}
+          </section>
+        </div>
+
+        <div className="content-side-column">
+          <section className="panel" id="categories">
+            <div className="panel-heading"><div><h2 className="panel-title">طومار موضوعات</h2><div className="panel-subtitle">روایتت را از کدام فصل آغاز می‌کنی؟</div></div></div>
+            <div className="category-list">{CATEGORIES.map(item => (
+              <button key={item.key} className={`category-button ${cat === item.key ? "selected" : ""}`} onClick={() => setCat(item.key)}>
+                <span className="category-name"><span>{item.icon}</span>{item.title}</span><span className="category-count">{items.filter(content => content.category === item.key).length.toLocaleString("fa-IR")}</span>
+              </button>
+            ))}</div>
+            <div className="ai-divider" />
+            <div className="panel-subtitle" style={{ marginBottom: 9 }}>پیشنهاد ایده برای قالب</div>
+            <div className="ai-actions">{FORMATS.map(format => (
+              <button key={format} className="ai-button" disabled={busy} onClick={() => aiSuggest(format)}>{busy ? "در حال ساخت…" : `✦ ${format}`}</button>
+            ))}</div>
+          </section>
+
+          <section className="panel" style={{ marginTop: 14 }}>
+            <div className="panel-heading"><div><h2 className="panel-title">نوبت ضبط</h2><div className="panel-subtitle">امروز و دو روز آینده</div></div><span>🎬</span></div>
+            {recording.length === 0 ? <div className="empty-state">ضبطی برای این روزها برنامه‌ریزی نشده است.</div> : (
+              <div className="timeline">{recording.map(item => (
+                <div className="timeline-item" key={item.id}><span className="timeline-dot" /><div className="timeline-copy"><div className="timeline-title">{item.title}</div><div className="timeline-date">{new Date(item.recordDate!).toLocaleDateString("fa-IR")} · {item.format}</div></div></div>
+              ))}</div>
+            )}
+          </section>
+
+          <section className="panel" id="upcoming" style={{ marginTop: 14 }}>
+            <div className="panel-heading"><div><h2 className="panel-title">انتشارهای بعدی</h2><div className="panel-subtitle">محتواهای برنامه‌ریزی‌شده</div></div><span>▦</span></div>
+            {upcoming.length === 0 ? <div className="empty-state">انتشار آینده‌ای در تقویم ثبت نشده است.</div> : (
+              <div className="timeline">{upcoming.slice(0, 5).map(item => (
+                <div className="timeline-item" key={item.id}><span className="timeline-dot" /><div className="timeline-copy"><div className="timeline-title">{item.title}</div><div className="timeline-date">{new Date(item.publishDate).toLocaleDateString("fa-IR")} · {item.format}</div></div></div>
+              ))}</div>
+            )}
+          </section>
+        </div>
+      </div>
+    </main>
   );
 }
 

@@ -14,5 +14,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (parsed.data.status === "APPROVED" && (!entry.autoReviewPassed || entry.citations.length === 0 || parsed.data.text !== undefined || parsed.data.title !== undefined)) {
         return NextResponse.json({ error: "برای تأیید، ارجاع معتبر لازم است؛ متن ویرایش‌شده را دوباره بازبینی خودکار کنید." }, { status: 409 });
     }
-    return NextResponse.json(await db.researchEntry.update({ where: { id }, data: parsed.data }));
+    const edited = parsed.data.title !== undefined || parsed.data.text !== undefined;
+    const data = edited
+        ? { ...parsed.data, status: "NEEDS_REVIEW" as const, autoReviewPassed: false, reviewNotes: "محتوا ویرایش شده و بازبینی مجدد لازم است." }
+        : parsed.data;
+    return NextResponse.json(await db.researchEntry.update({ where: { id }, data }));
 }

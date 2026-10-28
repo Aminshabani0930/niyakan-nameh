@@ -7,7 +7,7 @@ type Context = { params: Promise<{ id: string }> };
 const Update = z.object({
   topic: z.string().trim().min(1).max(500).optional(),
   publishDate: z.string().datetime().optional(),
-  type: z.enum(["POST", "CAROUSEL", "REEL"]).optional(),
+  type: z.enum(["POST", "CAROUSEL", "REEL", "STORY"]).optional(),
   tone: z.string().trim().min(1).max(100).optional(),
   notes: z.string().max(2_000).optional(),
   status: z.enum(["PLANNED", "APPROVED"]).optional(),

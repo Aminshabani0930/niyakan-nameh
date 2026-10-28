@@ -14,6 +14,15 @@ export const DEFAULT_SETTINGS = {
   agentEnabled: true,
   imageStyle: DEFAULT_IMAGE_STYLE,
   carouselSlides: 3,
+  weeklyPattern: {
+    reelsPerWeek: 3,
+    carouselsPerWeek: 3,
+    storiesPerDay: 4,
+    reelTime: "19:00",
+    carouselTime: "12:00",
+    storyTimes: { morning: "08:00", noon: "12:00", afternoon: "16:00", night: "21:00" },
+  },
+  digestTime: "08:00",
 };
 
 /** یک رکورد تنظیمات برای کل برنامه؛ اگر نبود با مقادیر پیش‌فرض ساخته می‌شود. */

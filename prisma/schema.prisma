@@ -12,6 +12,7 @@ enum PlanContentType {
   POST
   CAROUSEL
   REEL
+  STORY
 }
 
 enum PlanItemStatus {
@@ -55,6 +56,7 @@ model PlanItem {
   errorMessage String?
   contentId    String?         @unique
   content      ContentItem?    @relation(fields: [contentId], references: [id], onDelete: SetNull)
+  calendarItem CalendarItem?
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 
@@ -70,6 +72,8 @@ model AppSetting {
   agentEnabled   Boolean  @default(true)
   imageStyle     String   @default("نگارگری ایرانی، مینیاتور صفوی، بافت کاغذ کهنه، رنگ‌های خاکی، لاجوردی و طلایی، ترکیب‌بندی سینمایی، بدون متن و واترمارک")
   carouselSlides Int      @default(3)
+  weeklyPattern  Json     @default("{}")
+  digestTime     String   @default("08:00")
   updatedAt      DateTime @updatedAt
 }
 
@@ -279,4 +283,53 @@ model InstagramDraft {
   researchEntry   ResearchEntry      @relation(fields: [researchEntryId], references: [id], onDelete: Cascade)
 
   @@index([researchEntryId, createdAt])
+}
+
+enum CalendarFormat {
+  POST
+  CAROUSEL
+  REEL
+  STORY
+}
+
+enum CalendarGoal {
+  ATTRACT
+  ENGAGE
+  SAVE
+  SHARE
+}
+
+enum CalendarPeriod {
+  MORNING
+  NOON
+  AFTERNOON
+  NIGHT
+}
+
+enum CalendarStatus {
+  SUGGESTED
+  DRAFT
+  APPROVED
+}
+
+model CalendarItem {
+  id          String         @id @default(cuid())
+  date        DateTime
+  time        String
+  period      CalendarPeriod?
+  format      CalendarFormat
+  topic       String
+  category    String
+  goal        CalendarGoal
+  hook        String
+  status      CalendarStatus @default(SUGGESTED)
+  sourceTag   String         @default("بدون داده‌ی آماری")
+  occasion    String?
+  planItemId  String?        @unique
+  planItem    PlanItem?      @relation(fields: [planItemId], references: [id], onDelete: SetNull)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([date, status])
+  @@index([format, date])
 }

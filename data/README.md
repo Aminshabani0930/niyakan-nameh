@@ -1,6 +1,6 @@
 # Import data
 
-This directory intentionally contains empty manifests. Add only material you have permission to store and cite; no historical text is seeded by the application.
+This directory contains editable research topics, an empty occasions list, and an empty source-import manifest. Add only material you have permission to store and cite; no historical text is seeded by the application.
 
 ## Large sources
 
@@ -45,8 +45,8 @@ The Shahnameh page reads only imported records. No verse is generated from model
 
 ## Research topics
 
-Edit `topics.json` to add or remove topic objects. `id` must be stable; `title`, `period`, and `queries` guide retrieval. Leave it empty until you supply topics.
+Edit `topics.json` to add or remove topic objects. Five starter topic labels are present; they contain no historical claims. `id` must be stable; `title`, `period`, and `queries` guide retrieval.
 
 ## Historical occasions
 
-Edit `occasions.json` with ISO month/day strings and a source note. The calendar never infers dates. An empty list means no occasion-based suggestions.
+Edit `occasions.json` with ISO month/day strings (`MM-DD`) and a source note. The calendar never infers dates. The sample file is empty until you add sourced occasions.

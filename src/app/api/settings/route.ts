@@ -10,6 +10,20 @@ const Body = z.object({
   agentEnabled: z.boolean(),
   imageStyle: z.string().min(1).max(1_000),
   carouselSlides: z.number().int().min(1).max(10),
+  weeklyPattern: z.object({
+    reelsPerWeek: z.number().int().min(0).max(14),
+    carouselsPerWeek: z.number().int().min(0).max(14),
+    storiesPerDay: z.number().int().min(0).max(4),
+    reelTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+    carouselTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+    storyTimes: z.object({
+      morning: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+      noon: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+      afternoon: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+      night: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+    }),
+  }),
+  digestTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
 }).partial();
 
 export async function GET() {

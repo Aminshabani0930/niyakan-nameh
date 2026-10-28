@@ -452,7 +452,7 @@ function carouselSlideCount(fallback?: number) {
 export async function generatePlannedContent(input: {
   topic: string;
   publishDate: Date;
-  type: "POST" | "CAROUSEL" | "REEL";
+  type: "POST" | "CAROUSEL" | "REEL" | "STORY";
   tone: string;
   notes: string;
   imageStyle?: string;

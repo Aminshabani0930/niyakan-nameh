@@ -9,6 +9,15 @@ type Settings = {
   agentEnabled: boolean;
   imageStyle: string;
   carouselSlides: number;
+  weeklyPattern: {
+    reelsPerWeek: number;
+    carouselsPerWeek: number;
+    storiesPerDay: number;
+    reelTime: string;
+    carouselTime: string;
+    storyTimes: { morning: string; noon: string; afternoon: string; night: string };
+  };
+  digestTime: string;
 };
 
 type Status = {
@@ -60,6 +69,14 @@ export default function SettingsPage() {
 
   function update<K extends keyof Settings>(key: K, value: Settings[K]) {
     setForm(current => current ? { ...current, [key]: value } : current);
+  }
+
+  function updatePattern<K extends keyof Settings["weeklyPattern"]>(key: K, value: Settings["weeklyPattern"][K]) {
+    setForm(current => current ? { ...current, weeklyPattern: { ...current.weeklyPattern, [key]: value } } : current);
+  }
+
+  function updateStoryTime(key: keyof Settings["weeklyPattern"]["storyTimes"], value: string) {
+    setForm(current => current ? { ...current, weeklyPattern: { ...current.weeklyPattern, storyTimes: { ...current.weeklyPattern.storyTimes, [key]: value } } } : current);
   }
 
   async function save() {
@@ -149,6 +166,19 @@ export default function SettingsPage() {
             <span><b>ایجنت روزانه</b><small>در کران روزانه، روزهای خالی هفته‌ی آینده را پر کن.</small></span>
           </label>
         </div>
+
+        <div className="ai-divider" />
+        <h3 className="panel-title">الگوی تقویم</h3>
+        <div className="form-grid" style={{ marginTop: 12 }}>
+          <label className="field"><span className="field-label">ریلز در هفته</span><input className="field-input" type="number" min={0} max={14} value={form.weeklyPattern.reelsPerWeek} onChange={event => updatePattern("reelsPerWeek", Number(event.target.value))} /></label>
+          <label className="field"><span className="field-label">کاروسل در هفته</span><input className="field-input" type="number" min={0} max={14} value={form.weeklyPattern.carouselsPerWeek} onChange={event => updatePattern("carouselsPerWeek", Number(event.target.value))} /></label>
+          <label className="field"><span className="field-label">استوری در روز</span><input className="field-input" type="number" min={0} max={4} value={form.weeklyPattern.storiesPerDay} onChange={event => updatePattern("storiesPerDay", Number(event.target.value))} /></label>
+          <label className="field"><span className="field-label">ساعت ریلز پیشنهادی</span><input className="field-input" type="time" value={form.weeklyPattern.reelTime} onChange={event => updatePattern("reelTime", event.target.value)} /></label>
+          <label className="field"><span className="field-label">ساعت کاروسل پیشنهادی</span><input className="field-input" type="time" value={form.weeklyPattern.carouselTime} onChange={event => updatePattern("carouselTime", event.target.value)} /></label>
+          {(["morning", "noon", "afternoon", "night"] as const).map((period, index) => <label className="field" key={period}><span className="field-label">ساعت استوری {(["صبح", "ظهر", "عصر", "شب"] as const)[index]}</span><input className="field-input" type="time" value={form.weeklyPattern.storyTimes[period]} onChange={event => updateStoryTime(period, event.target.value)} /></label>)}
+          <label className="field"><span className="field-label">ساعت خلاصه‌ی صبح تلگرام</span><input className="field-input" type="time" value={form.digestTime} onChange={event => update("digestTime", event.target.value)} /></label>
+        </div>
+        <p className="panel-subtitle">استوری‌ها فقط ایده و متن پیش‌نویس هستند؛ هیچ قالبی خودکار منتشر نمی‌شود.</p>
 
         <button className="primary-button" disabled={busy} onClick={save}>{busy ? "در حال ذخیره…" : "ذخیره‌ی تنظیمات"}</button>
       </section>

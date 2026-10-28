@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/client";
 
-type PlanType = "POST" | "CAROUSEL" | "REEL";
+type PlanType = "POST" | "CAROUSEL" | "REEL" | "STORY";
 type PlanStatus = "PLANNED" | "GENERATING" | "DRAFT" | "APPROVED" | "FAILED";
 type PlanItem = {
   id: string;
@@ -34,7 +34,7 @@ const statusNames: Record<PlanStatus, string> = {
   APPROVED: "تأییدشده",
   FAILED: "ناموفق",
 };
-const typeNames: Record<PlanType, string> = { POST: "پست", CAROUSEL: "کاروسل", REEL: "ریلز" };
+const typeNames: Record<PlanType, string> = { POST: "پست", CAROUSEL: "کاروسل", REEL: "ریلز", STORY: "استوری" };
 
 function toIsoDate(date: string) {
   return new Date(`${date}T12:00:00`).toISOString();
